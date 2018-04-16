@@ -83,8 +83,13 @@ struct EDATA encrypt(const unsigned char* K, int export, uint32_t T, const char*
 	memcpy_s(edata.Checksum, HMAC_MD5_LENGTH, HMAC(EVP_md5(), K2, HMAC_MD5_LENGTH, concat, 9 + strlen(edata.Data), NULL, NULL), HMAC_MD5_LENGTH);
 	
 	unsigned char* K3 = HMAC(EVP_md5(), K1, HMAC_MD5_LENGTH, edata.Checksum, HMAC_MD5_LENGTH, NULL, NULL);
-	RC4(K3, 8, edata.Confounder, edata.Confounder);
-	RC4(K3, strlen(data), edata.Data, edata.Data);
+	RC4_KEY K3_RC4;
+	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
+	RC4(&K3_RC4, 8, edata.Confounder, edata.Confounder);
+	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
+	RC4(&K3_RC4, strlen(data), edata.Data, edata.Data);
+	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
+	RC4(&K3_RC4, strlen(data), edata.Data, edata.Data);
 
 	free(K1);
 	K1 = NULL;
@@ -113,8 +118,13 @@ int decrypt(const unsigned char* K, int export, uint32_t T, struct EDATA* edata)
 	if (export) memset(K1 + 7, 0xAB, 9);
 
 	unsigned char* K3 = HMAC(EVP_md5(), K1, HMAC_MD5_LENGTH, edata->Checksum, HMAC_MD5_LENGTH, NULL, NULL);
-	RC4(K3, 8, edata->Confounder, edata->Confounder);
-	RC4(K3, strlen(edata->Data), edata->Data, edata->Data);
+	RC4_KEY K3_RC4;
+	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
+	RC4(&K3_RC4, 8, edata->Confounder, edata->Confounder);
+	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
+	RC4(&K3_RC4, strlen(edata->Data), edata->Data, edata->Data);
+	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
+	RC4(&K3_RC4, strlen(edata->Data), edata->Data, edata->Data);
 
 	unsigned char* concat = (unsigned char*)calloc(9 + strlen(edata->Data), sizeof(unsigned char));
 	memcpy_s(concat, 9 + strlen(edata->Data), edata->Confounder, 8);
