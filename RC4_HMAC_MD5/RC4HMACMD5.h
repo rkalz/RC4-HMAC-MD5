@@ -149,4 +149,24 @@ int decrypt(const unsigned char* K, int export, uint32_t T, struct EDATA* edata)
 	return 1;
 }
 
+unsigned char* EDATA_to_byte_array(struct EDATA edata) {
+	const int size = 25 + strlen(edata.Data);
+	unsigned char* data = (unsigned char*)calloc(size, sizeof(unsigned char));
+	memcpy_s(data, size, edata.Checksum, HMAC_MD5_LENGTH);
+	memcpy_s(data + HMAC_MD5_LENGTH, size - HMAC_MD5_LENGTH, edata.Confounder, 8);
+	memcpy_s(data + 24, size - 24, edata.Data, strlen(edata.Data));
+	return data;
+}
+
+struct EDATA byte_array_to_EDATA(unsigned char* data) {
+	struct EDATA edata = { 0, 0, 0 };
+	memcpy_s(edata.Checksum, HMAC_MD5_LENGTH, data, HMAC_MD5_LENGTH);
+	memcpy_s(edata.Confounder, 8, data + HMAC_MD5_LENGTH, 8);
+
+	int dataSize = strlen(data) - 23;
+	edata.Data = (OCTET*)calloc(dataSize, sizeof(OCTET));
+	memcpy_s(edata.Data, dataSize, data + 24, dataSize);
+	return edata;
+}
+
 #endif
