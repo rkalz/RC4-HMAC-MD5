@@ -22,21 +22,22 @@ typedef struct EDATA {
 
 // Converts UTF8 to UTF16 Little Endian
 // utf8: Input string, utf16le: Output string
-void UTF8ToUTF16LE(const char* utf8, unsigned char** utf16le) {
+unsigned char* UTF8ToUTF16LE(const char* utf8) {
 	int len = strlen(utf8);
-	*utf16le = (unsigned char*)calloc(2 * len, sizeof(unsigned char));
+	unsigned char* utf16le = (unsigned char*)calloc(2 * len, sizeof(unsigned char));
 	for (int i = 0; i < 2 * len; i += 2) {
-		(*utf16le)[i] = utf8[i / 2];
+		utf16le[i] = utf8[i / 2];
 	}
+	return utf16le;
 }
 
 // Converts UTF8 input TO UTF16LE, sets key to MD4 hash
 // string: Input string, key: Output key
-void StringToKey(const char* string, unsigned char** key) {
-	unsigned char* unicode;
-	UTF8ToUTF16LE(string, &unicode);
-	*key = MD4((unsigned char*)unicode, 2 * strlen(string), NULL);
+unsigned char* StringToKey(const char* string) {
+	unsigned char* unicode = UTF8ToUTF16LE(string);
+	unsigned char* key = MD4((unsigned char*)unicode, 2 * strlen(string), NULL);
 	free(unicode);
+	return key;
 }
 
 // Checksum used by algorithm, no idea as to where this is used
@@ -57,7 +58,7 @@ unsigned char* Checksum(const unsigned char* K, uint32_t T, const char* data) {
 // Encryption
 // K: Input Key, export: Key length > 5 bytes, T: Message Type (4 byte LE), data: Input Data
 // returns an EDATA Struct
-struct EDATA encrypt(const unsigned char* K, int export, uint32_t T, const char* data) {
+struct EDATA encrypt(const unsigned char* K, const int export, const uint32_t T, const char* data) {
 	OCTET L40[14] = "fortybits";
 	struct EDATA edata = (EDATA) { 0, 0, 0 };
 
@@ -100,7 +101,7 @@ struct EDATA encrypt(const unsigned char* K, int export, uint32_t T, const char*
 
 // Decryption
 // K: Input key, export: Key length > 5 bytes, T: Message Type (4 byte LE), edata: Input encrypted data
-int decrypt(const unsigned char* K, int export, uint32_t T, struct EDATA* edata) {
+unsigned char* decrypt(const unsigned char* K, const int export, const uint32_t T, struct EDATA* edata) {
 	OCTET L40[14] = "fortybits";
 
 	unsigned char* K1 = (unsigned char*)calloc(HMAC_MD5_LENGTH, sizeof(unsigned char));
@@ -137,19 +138,19 @@ int decrypt(const unsigned char* K, int export, uint32_t T, struct EDATA* edata)
 
 	for (int i = 0; i < HMAC_MD5_LENGTH; ++i) {
 		if (checksum[i] != edata->Checksum[i]) {
-			printf("ERROR: CHECKSUM FAILED!\n");
 			free(checksum);
 			checksum = NULL;
-			return 0;
+			return "FAIL";
 		}
 	}
 
 	free(checksum);
 	checksum = NULL;
-	return 1;
+	return edata->Data;
 }
 
-unsigned char* EDATA_to_byte_array(struct EDATA edata) {
+// Converts EDATA struct into an unsigned char* array
+unsigned char* EDATA_to_byte_array(const struct EDATA edata) {
 	const int size = 25 + strlen(edata.Data);
 	unsigned char* data = (unsigned char*)calloc(size, sizeof(unsigned char));
 	memcpy_s(data, size, edata.Checksum, HMAC_MD5_LENGTH);
@@ -158,7 +159,8 @@ unsigned char* EDATA_to_byte_array(struct EDATA edata) {
 	return data;
 }
 
-struct EDATA byte_array_to_EDATA(unsigned char* data) {
+// Converts byte array into EDATA struct
+struct EDATA byte_array_to_EDATA(const unsigned char* data) {
 	struct EDATA edata = { 0, 0, 0 };
 	memcpy_s(edata.Checksum, HMAC_MD5_LENGTH, data, HMAC_MD5_LENGTH);
 	memcpy_s(edata.Confounder, 8, data + HMAC_MD5_LENGTH, 8);
