@@ -39,7 +39,7 @@ void StringToKey(const char* string, unsigned char** key) {
 	free(unicode);
 }
 
-// Checksum used by algorithm
+// Checksum used by algorithm, no idea as to where this is used
 // K: Input key, T: Message Type (4 byte LE), data: Input data
 unsigned char* Checksum(const unsigned char* K, uint32_t T, const char* data) {
 	unsigned char* ksign = HMAC(EVP_md5(), K, MD4_DIGEST_LENGTH, (unsigned char*)"signaturekey", strlen("signaturekey"), NULL, NULL);
@@ -86,9 +86,7 @@ struct EDATA encrypt(const unsigned char* K, int export, uint32_t T, const char*
 	RC4_KEY K3_RC4;
 	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
 	RC4(&K3_RC4, 8, edata.Confounder, edata.Confounder);
-	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
-	RC4(&K3_RC4, strlen(data), edata.Data, edata.Data);
-	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
+	//RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
 	RC4(&K3_RC4, strlen(data), edata.Data, edata.Data);
 
 	free(K1);
@@ -121,9 +119,7 @@ int decrypt(const unsigned char* K, int export, uint32_t T, struct EDATA* edata)
 	RC4_KEY K3_RC4;
 	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
 	RC4(&K3_RC4, 8, edata->Confounder, edata->Confounder);
-	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
-	RC4(&K3_RC4, strlen(edata->Data), edata->Data, edata->Data);
-	RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
+	//RC4_set_key(&K3_RC4, HMAC_MD5_LENGTH, K3);
 	RC4(&K3_RC4, strlen(edata->Data), edata->Data, edata->Data);
 
 	unsigned char* concat = (unsigned char*)calloc(9 + strlen(edata->Data), sizeof(unsigned char));
@@ -152,6 +148,5 @@ int decrypt(const unsigned char* K, int export, uint32_t T, struct EDATA* edata)
 	checksum = NULL;
 	return 1;
 }
-
 
 #endif
