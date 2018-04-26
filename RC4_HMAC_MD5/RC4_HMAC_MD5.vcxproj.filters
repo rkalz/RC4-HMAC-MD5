@@ -20,7 +20,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="RC4HMACMD5.h">
+    <ClInclude Include="RC4_HMAC_MD5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
